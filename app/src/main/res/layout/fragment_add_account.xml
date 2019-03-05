@@ -8,7 +8,6 @@
     tools:context=".Fragments.AddAccountFragment"
     android:background="@drawable/background_list_coordinates">
 
-
     <ImageView
         android:id="@+id/imgLogoAddAccount"
         android:layout_width="300dp"
@@ -25,7 +24,7 @@
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintVertical_bias="0.25" />
+        app:layout_constraintVertical_bias="0.15" />
 
     <ProgressBar
         android:id="@+id/add_account_progress"
@@ -48,7 +47,7 @@
         android:layout_height="40dp"
         android:layout_marginStart="8dp"
         android:layout_marginLeft="8dp"
-        android:layout_marginTop="80dp"
+        android:layout_marginTop="32dp"
         android:layout_marginEnd="8dp"
         android:layout_marginRight="8dp"
         android:background="@drawable/background_login_field"
@@ -70,7 +69,7 @@
         android:id="@+id/imgUserIconAddAccount"
         android:layout_width="50dp"
         android:layout_height="40dp"
-        android:layout_marginTop="80dp"
+        android:layout_marginTop="32dp"
         android:src="@drawable/ic_account_circle_24dp"
         app:layout_constraintEnd_toStartOf="@+id/edtEmailAddAccount"
         app:layout_constraintTop_toBottomOf="@+id/imgLogoAddAccount" />
@@ -125,6 +124,5 @@
         android:background="@drawable/background_login_field"
         android:textSize="18sp"
         />
-
 
 </android.support.constraint.ConstraintLayout>
