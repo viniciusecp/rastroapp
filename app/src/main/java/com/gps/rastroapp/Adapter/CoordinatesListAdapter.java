@@ -45,8 +45,13 @@ public class CoordinatesListAdapter extends ArrayAdapter<Coordinate> {
         TextView txtSpeed = convertView.findViewById(R.id.txtSpeed);
 
         txtDate.setText(mountDate(date));
-        txtLatitude.setText(latitude.substring(0, 9));
-        txtLongitude.setText(longitude.substring(0, 9));
+        try {
+            txtLatitude.setText(latitude.substring(0, 9));
+            txtLongitude.setText(longitude.substring(0, 9));
+        } catch (Exception e){
+            txtLatitude.setText(latitude);
+            txtLongitude.setText(longitude);
+        }
 
         if (speed.equals("0")){
             txtSpeed.setText("0 km/h");

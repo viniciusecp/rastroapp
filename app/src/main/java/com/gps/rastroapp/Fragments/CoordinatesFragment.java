@@ -65,70 +65,69 @@ public class CoordinatesFragment extends Fragment {
         jsonParams.put("email", email);
         jsonParams.put("senha", senha);
 
-        showProgress(true);
 
-        NetworkManager.getInstance().somePostRequestReturningString(path, jsonParams, new SomeCustomListener<String>() {
-            @Override
-            public void getResult(JSONObject result) {
-                try {
-                    final Coordinates coordinates = new Coordinates(
-                            result.getJSONArray("coordinates")
-                    );
+        if(!NetworkManager.isNetworkAvailable(getActivity())){
+            Toast.makeText(getActivity(), "Sem acesso a internet!", Toast.LENGTH_SHORT).show();
+        } else {
+            showProgress(true);
 
-                    final ArrayList<Coordinate> coordinateArrayList = new ArrayList<Coordinate>();
-                    for (int i = 0; i < coordinates.getCoordinates().length(); i++) {
-                        Coordinate coordinate = new Coordinate(
-                                coordinates.getCoordinates().getJSONObject(i).getString("date"),
-                                coordinates.getCoordinates().getJSONObject(i).getString("latitudeDecimalDegrees"),
-                                coordinates.getCoordinates().getJSONObject(i).getString("longitudeDecimalDegrees"),
-                                coordinates.getCoordinates().getJSONObject(i).getString("speed")
-
-                        );
-                        coordinateArrayList.add(coordinate);
-                    }
-
-                    CoordinatesListAdapter adapter = new CoordinatesListAdapter(getActivity(), R.layout.adapter_coordinates_view, coordinateArrayList);
-
-                    listViewCoordinatesFragment.setAdapter(adapter);
-                    listViewCoordinatesFragment.setDivider(null);
-
-                    listViewCoordinatesFragment.setOnItemClickListener(new AdapterView.OnItemClickListener() {
-                        @Override
-                        public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
-                            Intent intent = new Intent(getActivity(), MapsActivity.class);
-                            intent.putExtra("latitudeDecimalDegrees", coordinateArrayList.get(position).getLatitude());
-                            intent.putExtra("longitudeDecimalDegrees",coordinateArrayList.get(position).getLongitude());
-                            startActivity(intent);
-                        }
-                    });
-
-                } catch (JSONException e) {
+            NetworkManager.getInstance().somePostRequestReturningString(path, jsonParams, new SomeCustomListener<String>() {
+                @Override
+                public void getResult(JSONObject result) {
                     try {
-                        if ( result.getString("Erro").equals("Usúario não autenticado") ) {
-                            Toast.makeText(getActivity(), "Usuário não autenticado!", Toast.LENGTH_SHORT).show();
-//                            finish();
+                        final Coordinates coordinates = new Coordinates(
+                                result.getJSONArray("coordinates")
+                        );
+
+                        final ArrayList<Coordinate> coordinateArrayList = new ArrayList<Coordinate>();
+                        for (int i = 0; i < coordinates.getCoordinates().length(); i++) {
+                            Coordinate coordinate = new Coordinate(
+                                    coordinates.getCoordinates().getJSONObject(i).getString("date"),
+                                    coordinates.getCoordinates().getJSONObject(i).getString("latitudeDecimalDegrees"),
+                                    coordinates.getCoordinates().getJSONObject(i).getString("longitudeDecimalDegrees"),
+                                    coordinates.getCoordinates().getJSONObject(i).getString("speed")
+
+                            );
+                            coordinateArrayList.add(coordinate);
                         }
-                    } catch (JSONException e1) {
-                        Toast.makeText(getActivity(), "Houve um erro interno: " + e1, Toast.LENGTH_LONG).show();
+
+                        CoordinatesListAdapter adapter = new CoordinatesListAdapter(getActivity(), R.layout.adapter_coordinates_view, coordinateArrayList);
+
+                        listViewCoordinatesFragment.setAdapter(adapter);
+                        listViewCoordinatesFragment.setDivider(null);
+
+                        listViewCoordinatesFragment.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+                            @Override
+                            public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
+                                Intent intent = new Intent(getActivity(), MapsActivity.class);
+                                intent.putExtra("latitudeDecimalDegrees", coordinateArrayList.get(position).getLatitude());
+                                intent.putExtra("longitudeDecimalDegrees",coordinateArrayList.get(position).getLongitude());
+                                startActivity(intent);
+                            }
+                        });
+
+                    } catch (JSONException e) {
+                        try {
+                            if ( result.getString("Erro").equals("Usúario não autenticado") ) {
+                                Toast.makeText(getActivity(), "Usuário não autenticado!", Toast.LENGTH_SHORT).show();
+//                            finish();
+                            }
+                        } catch (JSONException e1) {
+                            Toast.makeText(getActivity(), "Houve um erro interno: " + e1, Toast.LENGTH_LONG).show();
+                        }
                     }
                 }
-            }
-        }, new ServerCallback() {
-            @Override
-            public void onSuccess(JSONObject response) { showProgress(false); }
-        });
+            }, new ServerCallback() {
+                @Override
+                public void onSuccess(JSONObject response) { showProgress(false); }
+            });
+        }
 
         return view;
     }
 
-    /**
-     * Shows the progress UI and hides the login form.
-     */
     @TargetApi(Build.VERSION_CODES.HONEYCOMB_MR2)
     private void showProgress(final boolean show) {
-        // On Honeycomb MR2 we have the ViewPropertyAnimator APIs, which allow
-        // for very easy animations. If available, use these APIs to fade-in
-        // the progress spinner.
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.HONEYCOMB_MR2) {
             int shortAnimTime = getResources().getInteger(android.R.integer.config_shortAnimTime);
 

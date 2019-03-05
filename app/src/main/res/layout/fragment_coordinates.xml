@@ -21,6 +21,6 @@
         android:id="@+id/listViewCoordinatesFragment"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:background="@drawable/backgroun_list_coordinates" />
+        android:background="@drawable/background_list_coordinates" />
 
 </LinearLayout>

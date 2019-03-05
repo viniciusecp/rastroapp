@@ -72,10 +72,9 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void setClickMenu() {
-        // setando clique no item do menu
         horizontal_menu.setOnHSMenuClickListener(new HorizontalScrollMenuView.OnHSMenuClickListener() {
             @Override
-            public void onHSMClick(MenuItem menuItem, int position) {
+            public void onHSMClick(MenuItem menuItem, final int position) {
                 if (menuItem.getIcon() == R.drawable.ic_directions_car_24dp){
 
                     String value = horizontalMenuItems.get(position);
@@ -98,13 +97,33 @@ public class MainActivity extends AppCompatActivity {
                 } else if (menuItem.getIcon() == R.drawable.ic_account_circle_24dp){
 
                     AlertDialog.Builder builder = new AlertDialog.Builder(MainActivity.this);
-                    builder.setMessage("Deseja sair desta conta?")
+                    builder.setMessage("Deseja sair da conta " + horizontal_menu.getItem(position).getText() + "?")
                             .setPositiveButton("Sim", new DialogInterface.OnClickListener() {
                                 public void onClick(DialogInterface dialog, int id) {
-                                    deletePreferences();
-                                    Intent intent = new Intent(MainActivity.this, LoginActivity.class);
-                                    startActivity(intent);
-                                    finish();
+
+                                    String value = horizontalMenuItems.get(position);
+                                    if (value.split("-")[0].equals("id")) {
+                                        for (User user : listUsers)
+                                            if (user.getId() == Integer.parseInt(value.split("-")[1])) {
+                                                listUsers.remove(user);
+                                                break;
+                                            }
+
+                                        saveOnPreferences(listUsers);
+                                        Toast.makeText(MainActivity.this, "Usuário removido com sucesso!", Toast.LENGTH_SHORT).show();
+
+                                        Intent intent;
+                                        if (listUsers.isEmpty())
+                                            intent = new Intent(MainActivity.this, LoginActivity.class);
+                                        else
+                                            intent = new Intent(MainActivity.this, MainActivity.class);
+                                        startActivity(intent);
+                                        finish();
+
+                                    } else {
+                                        Toast.makeText(MainActivity.this, "Houve um erro interno!", Toast.LENGTH_SHORT).show();
+                                    }
+
                                 }
                             })
                             .setNegativeButton("Não", new DialogInterface.OnClickListener() {
@@ -123,12 +142,19 @@ public class MainActivity extends AppCompatActivity {
         });
     }
 
-    public void deletePreferences(){
+    public void saveOnPreferences(ArrayList<User> lUsers){
         SharedPreferences mPrefs = getSharedPreferences("USER_DATA", MODE_PRIVATE);
 
         SharedPreferences.Editor prefsEditor = mPrefs.edit();
 
-        prefsEditor.putString("User", "");
+        String jsonString = "{\"users\":[";
+        for (User user : lUsers){
+            jsonString += user.toString() + ",";
+        }
+        jsonString += "]}";
+
+        prefsEditor.putString("User", jsonString);
+
         prefsEditor.commit();
     }
 
@@ -159,28 +185,5 @@ public class MainActivity extends AppCompatActivity {
         }
         return lUsers;
     }
-
-//    public User getPreferencesSaved(){
-//        SharedPreferences  mPrefs = getSharedPreferences("USER_DATA", MODE_PRIVATE);
-//
-//        String jsonString = mPrefs.getString("User", "");
-//        User user = null;
-//
-//        try {
-//            JSONObject obj = new JSONObject(String.valueOf(jsonString));
-//            user = new User(
-//                    obj.getString("id"),
-//                    obj.getString("email"),
-//                    obj.getString("senha"),
-//                    obj.getString("nome"),
-//                    obj.getString("apelido"),
-//                    obj.getJSONArray("veiculos")
-//            );
-//        } catch (JSONException e) {
-//            e.printStackTrace();
-//        }
-//
-//        return user;
-//    }
 
 }

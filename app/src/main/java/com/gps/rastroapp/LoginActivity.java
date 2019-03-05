@@ -5,28 +5,13 @@ import android.animation.AnimatorListenerAdapter;
 import android.annotation.TargetApi;
 import android.content.Intent;
 import android.content.SharedPreferences;
-import android.support.v7.app.AppCompatActivity;
-import android.app.LoaderManager.LoaderCallbacks;
-
-import android.content.CursorLoader;
-import android.content.Loader;
-import android.database.Cursor;
-import android.net.Uri;
-
 import android.os.Build;
+import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
-import android.provider.ContactsContract;
-import android.text.TextUtils;
-import android.util.Log;
-import android.view.KeyEvent;
 import android.view.View;
-import android.view.View.OnClickListener;
-import android.view.inputmethod.EditorInfo;
-import android.widget.ArrayAdapter;
-import android.widget.AutoCompleteTextView;
 import android.widget.Button;
 import android.widget.EditText;
-import android.widget.TextView;
+import android.widget.ImageView;
 import android.widget.Toast;
 
 import com.gps.rastroapp.Helper.NetworkManager;
@@ -38,22 +23,25 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
-import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
-public class LoginActivity extends AppCompatActivity implements LoaderCallbacks<Cursor> {
+public class LoginActivity extends AppCompatActivity {
 
-    private AutoCompleteTextView mEmailView;
-    private EditText mPasswordView;
-    private View mProgressView;
-    private View mLoginFormView;
+    private EditText edtEmailLogin;
+    private EditText edtPasswordLogin;
+    private Button btnEntrarLogin;
+
+    private ImageView imgUserIconLogin;
+    private ImageView imgLockIconLogin;
+    private View login_progress;
 
     @Override
-    protected void onCreate(Bundle savedInstanceState) {
+    protected void onCreate(Bundle savedInstanceState){
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_login);
+
+        NetworkManager.getInstance(this);
 
         if (getPreferencesSaved() != null){
             Intent intent = new Intent(LoginActivity.this, MainActivity.class);
@@ -61,164 +49,78 @@ public class LoginActivity extends AppCompatActivity implements LoaderCallbacks<
             finish();
         }
 
-        NetworkManager.getInstance(this);
+        edtEmailLogin = findViewById(R.id.edtEmailLogin);
+        edtPasswordLogin = findViewById(R.id.edtPasswordLogin);
+        btnEntrarLogin = findViewById(R.id.btnEntrarLogin);
 
-        // Set up the login form.
-        mEmailView = findViewById(R.id.email);
+        imgUserIconLogin = findViewById(R.id.imgUserIconLogin);
+        imgLockIconLogin = findViewById(R.id.imgLockIconLogin);
+        login_progress = findViewById(R.id.login_progress);
 
-        mPasswordView = findViewById(R.id.password);
-        mPasswordView.setOnEditorActionListener(new TextView.OnEditorActionListener() {
+        btnEntrarLogin.setOnClickListener(new View.OnClickListener() {
             @Override
-            public boolean onEditorAction(TextView textView, int id, KeyEvent keyEvent) {
-                if (id == EditorInfo.IME_ACTION_DONE || id == EditorInfo.IME_NULL) {
-                    attemptLogin();
-                    return true;
+            public void onClick(View v) {
+
+                String email = edtEmailLogin.getText().toString();
+                final String password = edtPasswordLogin.getText().toString();
+
+                if (email.equals("") || password.equals("")){
+                    Toast.makeText(LoginActivity.this, "Preencha todos os campos!", Toast.LENGTH_SHORT).show();
+                    return;
                 }
-                return false;
-            }
-        });
+                if(!NetworkManager.isNetworkAvailable(LoginActivity.this)){
+                    Toast.makeText(LoginActivity.this, "Sem acesso a internet!", Toast.LENGTH_SHORT).show();
+                    return;
+                }
 
-        Button mEmailSignInButton = findViewById(R.id.email_sign_in_button);
-        mEmailSignInButton.setOnClickListener(new OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                attemptLogin();
-            }
-        });
+                String path = "authentication";
 
-        mLoginFormView = findViewById(R.id.login_form);
-        mProgressView = findViewById(R.id.login_progress);
-    }
+                Map<String, String> jsonParams = new HashMap<>();
+                jsonParams.put("email", email);
+                jsonParams.put("senha", password);
 
-    /**
-     * Attempts to sign in or register the account specified by the login form.
-     * If there are form errors (invalid email, missing fields, etc.), the
-     * errors are presented and no actual login attempt is made.
-     */
-    private void attemptLogin() {
+                showProgress(true);
 
-        // Reset errors.
-        mEmailView.setError(null);
-        mPasswordView.setError(null);
-
-        // Store values at the time of the login attempt.
-        String email = mEmailView.getText().toString();
-        final String password = mPasswordView.getText().toString();
-
-        boolean cancel = false;
-        View focusView = null;
-
-        // Check for a valid password, if the user entered one.
-        if (TextUtils.isEmpty(password)) {
-            mPasswordView.setError(getString(R.string.error_field_required));
-            focusView = mPasswordView;
-            cancel = true;
-        }
-
-        // Check for a valid email address.
-        if (TextUtils.isEmpty(email)) {
-            mEmailView.setError(getString(R.string.error_field_required));
-            focusView = mEmailView;
-            cancel = true;
-        }
-
-        if (cancel) {
-            // There was an error; don't attempt login and focus the first
-            // form field with an error.
-            focusView.requestFocus();
-        } else {
-            // Show a progress spinner, and kick off a background task to
-            // perform the user login attempt.
-            showProgress(true);
-
-            if(!NetworkManager.isNetworkAvailable(this)){
-                showProgress(false);
-                Toast.makeText(this, "Sem acesso a internet!", Toast.LENGTH_SHORT).show();
-                return;
-            }
-
-            String path = "authentication";
-
-            Map<String, String> jsonParams = new HashMap<>();
-            jsonParams.put("email", email);
-            jsonParams.put("senha", password);
-
-            NetworkManager.getInstance().somePostRequestReturningString(path, jsonParams, new SomeCustomListener<String>() {
-                @Override
-                public void getResult(JSONObject result) {
-                    try {
-                        User user = new User(
-                                result.getString("id"),
-                                result.getString("email"),
-                                password,
-                                result.getString("nome"),
-                                result.getString("apelido"),
-                                result.getJSONArray("veiculos")
-                        );
-
-                        Toast.makeText(LoginActivity.this, "Usuario autenticado", Toast.LENGTH_SHORT).show();
-                        saveOnPreferences(user);
-
-                        Intent intent = new Intent(LoginActivity.this, MainActivity.class);
-                        startActivity(intent);
-
-                        finish();
-
-                    } catch (JSONException e) {
+                NetworkManager.getInstance().somePostRequestReturningString(path, jsonParams, new SomeCustomListener<String>() {
+                    @Override
+                    public void getResult(JSONObject result) {
                         try {
-                            if ( result.getString("Erro").equals("Usúario não autenticado") ) {
-                                mPasswordView.setError(getString(R.string.error_incorrect_password));
-                                mPasswordView.requestFocus();
+                            User user = new User(
+                                    result.getString("id"),
+                                    result.getString("email"),
+                                    password,
+                                    result.getString("nome"),
+                                    result.getString("apelido"),
+                                    result.getJSONArray("veiculos")
+                            );
+
+                            Toast.makeText(LoginActivity.this, "Usuario autenticado", Toast.LENGTH_SHORT).show();
+                            saveOnPreferences(user);
+
+                            Intent intent = new Intent(LoginActivity.this, MainActivity.class);
+                            startActivity(intent);
+                            finish();
+
+                        } catch (JSONException e) {
+                            try {
+                                if ( result.getString("Erro").equals("Usúario não autenticado") ) {
+                                    Toast.makeText(LoginActivity.this, "Usuario não autenticado", Toast.LENGTH_SHORT).show();
+                                }
+                            } catch (JSONException e1) {
+                                Toast.makeText(LoginActivity.this, "Houve um erro interno: " + e1, Toast.LENGTH_LONG).show();
                             }
-                        } catch (JSONException e1) {
-                            Toast.makeText(LoginActivity.this, "Houve um erro interno: " + e1, Toast.LENGTH_LONG).show();
                         }
                     }
-                }
-            }, new ServerCallback() {
-                @Override
-                public void onSuccess(JSONObject response) {
-                    showProgress(false);
-                }
-            });
+                }, new ServerCallback() {
+                    @Override
+                    public void onSuccess(JSONObject response) {
+                        showProgress(false);
+                    }
+                });
 
-        }
-    }
+            }
+        });
 
-    /**
-     * Shows the progress UI and hides the login form.
-     */
-    @TargetApi(Build.VERSION_CODES.HONEYCOMB_MR2)
-    private void showProgress(final boolean show) {
-        // On Honeycomb MR2 we have the ViewPropertyAnimator APIs, which allow
-        // for very easy animations. If available, use these APIs to fade-in
-        // the progress spinner.
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.HONEYCOMB_MR2) {
-            int shortAnimTime = getResources().getInteger(android.R.integer.config_shortAnimTime);
-
-            mLoginFormView.setVisibility(show ? View.GONE : View.VISIBLE);
-            mLoginFormView.animate().setDuration(shortAnimTime).alpha(
-                    show ? 0 : 1).setListener(new AnimatorListenerAdapter() {
-                @Override
-                public void onAnimationEnd(Animator animation) {
-                    mLoginFormView.setVisibility(show ? View.GONE : View.VISIBLE);
-                }
-            });
-
-            mProgressView.setVisibility(show ? View.VISIBLE : View.GONE);
-            mProgressView.animate().setDuration(shortAnimTime).alpha(
-                    show ? 1 : 0).setListener(new AnimatorListenerAdapter() {
-                @Override
-                public void onAnimationEnd(Animator animation) {
-                    mProgressView.setVisibility(show ? View.VISIBLE : View.GONE);
-                }
-            });
-        } else {
-            // The ViewPropertyAnimator APIs are not available, so simply show
-            // and hide the relevant UI components.
-            mProgressView.setVisibility(show ? View.VISIBLE : View.GONE);
-            mLoginFormView.setVisibility(show ? View.GONE : View.VISIBLE);
-        }
     }
 
     public void saveOnPreferences(User user){
@@ -226,7 +128,6 @@ public class LoginActivity extends AppCompatActivity implements LoaderCallbacks<
 
         SharedPreferences.Editor prefsEditor = mPrefs.edit();
 
-//        String jsonString = "{\"users\":[" + user.toString() + ",{\"id\":\"117\",\"email\":\"hozana@gmail.com\",\"senha\":\"654321\",\"nome\":\"Hozana\",\"apelido\":\"null\",\"veiculos\":[{\"imei\":\"868683027707896\",\"veiculo\":\"Agile\"}]}]}";
         String jsonString = "{\"users\":[" + user.toString() + "]}";
 
         prefsEditor.putString("User", jsonString);
@@ -260,55 +161,69 @@ public class LoginActivity extends AppCompatActivity implements LoaderCallbacks<
         return user;
     }
 
-    // métodos necessários por extender a outra classe
-    @Override
-    public Loader<Cursor> onCreateLoader(int i, Bundle bundle) {
-        return new CursorLoader(this,
-                // Retrieve data rows for the device user's 'profile' contact.
-                Uri.withAppendedPath(ContactsContract.Profile.CONTENT_URI,
-                        ContactsContract.Contacts.Data.CONTENT_DIRECTORY), ProfileQuery.PROJECTION,
+    @TargetApi(Build.VERSION_CODES.HONEYCOMB_MR2)
+    private void showProgress(final boolean show) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.HONEYCOMB_MR2) {
+            int shortAnimTime = getResources().getInteger(android.R.integer.config_shortAnimTime);
 
-                // Select only email addresses.
-                ContactsContract.Contacts.Data.MIMETYPE +
-                        " = ?", new String[]{ContactsContract.CommonDataKinds.Email
-                .CONTENT_ITEM_TYPE},
+            edtEmailLogin.setVisibility(show ? View.GONE : View.VISIBLE);
+            edtPasswordLogin.setVisibility(show ? View.GONE : View.VISIBLE);
+            btnEntrarLogin.setVisibility(show ? View.GONE : View.VISIBLE);
+            imgUserIconLogin.setVisibility(show ? View.GONE : View.VISIBLE);
+            imgLockIconLogin.setVisibility(show ? View.GONE : View.VISIBLE);
 
-                // Show primary email addresses first. Note that there won't be
-                // a primary email address if the user hasn't specified one.
-                ContactsContract.Contacts.Data.IS_PRIMARY + " DESC");
-    }
-    @Override
-    public void onLoadFinished(Loader<Cursor> cursorLoader, Cursor cursor) {
-        List<String> emails = new ArrayList<>();
-        cursor.moveToFirst();
-        while (!cursor.isAfterLast()) {
-            emails.add(cursor.getString(ProfileQuery.ADDRESS));
-            cursor.moveToNext();
+            imgUserIconLogin.animate().setDuration(shortAnimTime).alpha(
+                    show ? 0 : 1).setListener(new AnimatorListenerAdapter() {
+                @Override
+                public void onAnimationEnd(Animator animation) {
+                    imgUserIconLogin.setVisibility(show ? View.GONE : View.VISIBLE);
+                }
+            });
+            edtPasswordLogin.animate().setDuration(shortAnimTime).alpha(
+                    show ? 0 : 1).setListener(new AnimatorListenerAdapter() {
+                @Override
+                public void onAnimationEnd(Animator animation) {
+                    edtPasswordLogin.setVisibility(show ? View.GONE : View.VISIBLE);
+                }
+            });
+            btnEntrarLogin.animate().setDuration(shortAnimTime).alpha(
+                    show ? 0 : 1).setListener(new AnimatorListenerAdapter() {
+                @Override
+                public void onAnimationEnd(Animator animation) {
+                    btnEntrarLogin.setVisibility(show ? View.GONE : View.VISIBLE);
+                }
+            });
+            imgUserIconLogin.animate().setDuration(shortAnimTime).alpha(
+                    show ? 0 : 1).setListener(new AnimatorListenerAdapter() {
+                @Override
+                public void onAnimationEnd(Animator animation) {
+                    imgUserIconLogin.setVisibility(show ? View.GONE : View.VISIBLE);
+                }
+            });
+            imgLockIconLogin.animate().setDuration(shortAnimTime).alpha(
+                    show ? 0 : 1).setListener(new AnimatorListenerAdapter() {
+                @Override
+                public void onAnimationEnd(Animator animation) {
+                    imgLockIconLogin.setVisibility(show ? View.GONE : View.VISIBLE);
+                }
+            });
+
+            login_progress.setVisibility(show ? View.VISIBLE : View.GONE);
+            login_progress.animate().setDuration(shortAnimTime).alpha(
+                    show ? 1 : 0).setListener(new AnimatorListenerAdapter() {
+                @Override
+                public void onAnimationEnd(Animator animation) {
+                    login_progress.setVisibility(show ? View.VISIBLE : View.GONE);
+                }
+            });
+        } else {
+            login_progress.setVisibility(show ? View.VISIBLE : View.GONE);
+            edtEmailLogin.setVisibility(show ? View.GONE : View.VISIBLE);
+            edtPasswordLogin.setVisibility(show ? View.GONE : View.VISIBLE);
+            btnEntrarLogin.setVisibility(show ? View.GONE : View.VISIBLE);
+            imgUserIconLogin.setVisibility(show ? View.GONE : View.VISIBLE);
+            imgLockIconLogin.setVisibility(show ? View.GONE : View.VISIBLE);
         }
-
-        addEmailsToAutoComplete(emails);
     }
-    @Override
-    public void onLoaderReset(Loader<Cursor> cursorLoader) {
-
-    }
-    private void addEmailsToAutoComplete(List<String> emailAddressCollection) {
-        //Create adapter to tell the AutoCompleteTextView what to show in its dropdown list.
-        ArrayAdapter<String> adapter =
-                new ArrayAdapter<>(LoginActivity.this,
-                        android.R.layout.simple_dropdown_item_1line, emailAddressCollection);
-
-        mEmailView.setAdapter(adapter);
-    }
-    private interface ProfileQuery {
-        String[] PROJECTION = {
-                ContactsContract.CommonDataKinds.Email.ADDRESS,
-                ContactsContract.CommonDataKinds.Email.IS_PRIMARY,
-        };
-
-        int ADDRESS = 0;
-        int IS_PRIMARY = 1;
-    }
-
 
 }
