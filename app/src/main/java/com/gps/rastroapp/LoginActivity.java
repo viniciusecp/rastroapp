@@ -17,6 +17,7 @@ import android.os.Build;
 import android.os.Bundle;
 import android.provider.ContactsContract;
 import android.text.TextUtils;
+import android.util.Log;
 import android.view.KeyEvent;
 import android.view.View;
 import android.view.View.OnClickListener;
@@ -33,6 +34,7 @@ import com.gps.rastroapp.Interface.ServerCallback;
 import com.gps.rastroapp.Interface.SomeCustomListener;
 import com.gps.rastroapp.Model.User;
 
+import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
@@ -180,7 +182,6 @@ public class LoginActivity extends AppCompatActivity implements LoaderCallbacks<
                 }
             });
 
-
         }
     }
 
@@ -224,32 +225,38 @@ public class LoginActivity extends AppCompatActivity implements LoaderCallbacks<
         SharedPreferences  mPrefs = getSharedPreferences("USER_DATA", MODE_PRIVATE);
 
         SharedPreferences.Editor prefsEditor = mPrefs.edit();
-        String jsonString = user.toString();
+
+//        String jsonString = "{\"users\":[" + user.toString() + ",{\"id\":\"117\",\"email\":\"hozana@gmail.com\",\"senha\":\"654321\",\"nome\":\"Hozana\",\"apelido\":\"null\",\"veiculos\":[{\"imei\":\"868683027707896\",\"veiculo\":\"Agile\"}]}]}";
+        String jsonString = "{\"users\":[" + user.toString() + "]}";
 
         prefsEditor.putString("User", jsonString);
+
         prefsEditor.commit();
     }
 
     public User getPreferencesSaved(){
-        SharedPreferences  mPrefs = getSharedPreferences("USER_DATA", MODE_PRIVATE);
+        SharedPreferences mPrefs = getSharedPreferences("USER_DATA", MODE_PRIVATE);
 
-        String jsonString = mPrefs.getString("User", "");
+        String jsonString = mPrefs.getString("User","");
         User user = null;
 
         try {
-            JSONObject obj = new JSONObject(String.valueOf(jsonString));
+            JSONObject obj = new JSONObject(jsonString);
+            JSONArray jArray= obj.getJSONArray("users");
+
+            // apenas para ver se tem algum registro e então passar para main activity
+            JSONObject firstUser = jArray.getJSONObject(0);
             user = new User(
-                    obj.getString("id"),
-                    obj.getString("email"),
-                    obj.getString("senha"),
-                    obj.getString("nome"),
-                    obj.getString("apelido"),
-                    obj.getJSONArray("veiculos")
+                    firstUser.getString("id"),
+                    firstUser.getString("email"),
+                    firstUser.getString("senha"),
+                    firstUser.getString("nome"),
+                    firstUser.getString("apelido"),
+                    firstUser.getJSONArray("veiculos")
             );
         } catch (JSONException e) {
             e.printStackTrace();
         }
-
         return user;
     }
 

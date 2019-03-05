@@ -6,13 +6,16 @@ import android.content.SharedPreferences;
 import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.util.Log;
 import android.widget.Toast;
 
 import com.darwindeveloper.horizontalscrollmenulibrary.custom_views.HorizontalScrollMenuView;
 import com.darwindeveloper.horizontalscrollmenulibrary.extras.MenuItem;
+import com.gps.rastroapp.Fragments.AddAccountFragment;
 import com.gps.rastroapp.Fragments.CoordinatesFragment;
 import com.gps.rastroapp.Model.User;
 
+import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
@@ -22,7 +25,7 @@ public class MainActivity extends AppCompatActivity {
 
     private HorizontalScrollMenuView horizontal_menu;
     private ArrayList<String> horizontalMenuItems;
-    private User user;
+    private ArrayList<User> listUsers;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -33,7 +36,7 @@ public class MainActivity extends AppCompatActivity {
 
         horizontalMenuItems = new ArrayList<>();
 
-        user = getPreferencesSaved();
+        listUsers = getPreferencesSaved();
 
         popularMenu();
 
@@ -47,15 +50,18 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void popularMenu() {
-        horizontal_menu.addItem(user.getNome(), R.drawable.ic_account_circle_24dp);
-        horizontalMenuItems.add("id-" + user.getId());
 
-        for (int i = 0; i < user.getVeiculos().length(); i++) {
-            try {
-                horizontal_menu.addItem(user.getVeiculos().getJSONObject(i).getString("veiculo"), R.drawable.ic_directions_car_24dp);
-                horizontalMenuItems.add("imei-" + user.getVeiculos().getJSONObject(i).getString("imei"));
-            } catch (JSONException e) {
-                e.printStackTrace();
+        for (User user : listUsers){
+            horizontal_menu.addItem(user.getNome(), R.drawable.ic_account_circle_24dp);
+            horizontalMenuItems.add("id-" + user.getId());
+
+            for (int i = 0; i < user.getVeiculos().length(); i++) {
+                try {
+                    horizontal_menu.addItem(user.getVeiculos().getJSONObject(i).getString("veiculo"), R.drawable.ic_directions_car_24dp);
+                    horizontalMenuItems.add("imei-" + user.getVeiculos().getJSONObject(i).getString("imei"));
+                } catch (JSONException e) {
+                    e.printStackTrace();
+                }
             }
         }
 
@@ -76,8 +82,8 @@ public class MainActivity extends AppCompatActivity {
                     if (value.split("-")[0].equals("imei")){
 
                         Bundle bundle = new Bundle();
-                        bundle.putString("email", user.getEmail());
-                        bundle.putString("senha", user.getSenha());
+                        bundle.putString("email", listUsers.get(0).getEmail());
+                        bundle.putString("senha", listUsers.get(0).getSenha());
                         bundle.putString("imei", value.split("-")[1]);
 
                         CoordinatesFragment coordinatesFragment = new CoordinatesFragment();
@@ -110,7 +116,7 @@ public class MainActivity extends AppCompatActivity {
 
 
                 } else if (menuItem.getIcon() == R.drawable.ic_add_circle_24dp){
-                    Toast.makeText(MainActivity.this, "Ainda estamos em desenvolvimento =)", Toast.LENGTH_SHORT).show();
+                    getSupportFragmentManager().beginTransaction().replace(R.id.frameLayout, new AddAccountFragment()).commit();
                 }
 
             }
@@ -118,7 +124,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     public void deletePreferences(){
-        SharedPreferences  mPrefs = getSharedPreferences("USER_DATA", MODE_PRIVATE);
+        SharedPreferences mPrefs = getSharedPreferences("USER_DATA", MODE_PRIVATE);
 
         SharedPreferences.Editor prefsEditor = mPrefs.edit();
 
@@ -126,27 +132,55 @@ public class MainActivity extends AppCompatActivity {
         prefsEditor.commit();
     }
 
-    public User getPreferencesSaved(){
-        SharedPreferences  mPrefs = getSharedPreferences("USER_DATA", MODE_PRIVATE);
+    public ArrayList<User> getPreferencesSaved(){
+        SharedPreferences mPrefs = getSharedPreferences("USER_DATA", MODE_PRIVATE);
 
-        String jsonString = mPrefs.getString("User", "");
-        User user = null;
+        String jsonString = mPrefs.getString("User","");
+        ArrayList<User> lUsers = new ArrayList<>();
 
         try {
-            JSONObject obj = new JSONObject(String.valueOf(jsonString));
-            user = new User(
-                    obj.getString("id"),
-                    obj.getString("email"),
-                    obj.getString("senha"),
-                    obj.getString("nome"),
-                    obj.getString("apelido"),
-                    obj.getJSONArray("veiculos")
-            );
+            JSONObject obj = new JSONObject(jsonString);
+            JSONArray jArray= obj.getJSONArray("users");
+
+            for ( int i = 0; i < jArray.length(); i++){
+                User user = new User(
+                        jArray.getJSONObject(i).getString("id"),
+                        jArray.getJSONObject(i).getString("email"),
+                        jArray.getJSONObject(i).getString("senha"),
+                        jArray.getJSONObject(i).getString("nome"),
+                        jArray.getJSONObject(i).getString("apelido"),
+                        jArray.getJSONObject(i).getJSONArray("veiculos")
+                );
+                lUsers.add(user);
+            }
+
         } catch (JSONException e) {
             e.printStackTrace();
         }
-
-        return user;
+        return lUsers;
     }
+
+//    public User getPreferencesSaved(){
+//        SharedPreferences  mPrefs = getSharedPreferences("USER_DATA", MODE_PRIVATE);
+//
+//        String jsonString = mPrefs.getString("User", "");
+//        User user = null;
+//
+//        try {
+//            JSONObject obj = new JSONObject(String.valueOf(jsonString));
+//            user = new User(
+//                    obj.getString("id"),
+//                    obj.getString("email"),
+//                    obj.getString("senha"),
+//                    obj.getString("nome"),
+//                    obj.getString("apelido"),
+//                    obj.getJSONArray("veiculos")
+//            );
+//        } catch (JSONException e) {
+//            e.printStackTrace();
+//        }
+//
+//        return user;
+//    }
 
 }

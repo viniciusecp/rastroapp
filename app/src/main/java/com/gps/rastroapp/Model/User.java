@@ -3,6 +3,8 @@ package com.gps.rastroapp.Model;
 import org.json.JSONArray;
 import org.json.JSONException;
 
+import java.io.Serializable;
+
 public class User {
 
     private int id;
