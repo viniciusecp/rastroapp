@@ -12,11 +12,13 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.AdapterView;
+import android.widget.Button;
 import android.widget.ListView;
 import android.widget.Toast;
 
 import com.gps.rastroapp.Adapter.CoordinatesListAdapter;
 import com.gps.rastroapp.Helper.NetworkManager;
+import com.gps.rastroapp.HistoryActivity;
 import com.gps.rastroapp.Interface.ServerCallback;
 import com.gps.rastroapp.Interface.SomeCustomListener;
 import com.gps.rastroapp.MapsActivity;
@@ -38,6 +40,7 @@ public class CoordinatesFragment extends Fragment {
 
     private ListView listViewCoordinatesFragment;
     private View mProgressView;
+    private Button btn_history;
 
 
     public CoordinatesFragment() {
@@ -53,10 +56,11 @@ public class CoordinatesFragment extends Fragment {
 
         listViewCoordinatesFragment = view.findViewById(R.id.listViewCoordinatesFragment);
         mProgressView = view.findViewById(R.id.coordinates_progress);
+        btn_history = view.findViewById(R.id.btn_history);
 
-        String email = getArguments().getString("email");
-        String senha = getArguments().getString("senha");
-        String imei = getArguments().getString("imei");
+        final String email = getArguments().getString("email");
+        final String senha = getArguments().getString("senha");
+        final String imei = getArguments().getString("imei");
 
         // Faz nova chamada a API
         String path = "getcoordinates/" + imei;
@@ -110,7 +114,6 @@ public class CoordinatesFragment extends Fragment {
                         try {
                             if ( result.getString("Erro").equals("Usúario não autenticado") ) {
                                 Toast.makeText(getActivity(), "Usuário não autenticado!", Toast.LENGTH_SHORT).show();
-//                            finish();
                             }
                         } catch (JSONException e1) {
                             Toast.makeText(getActivity(), "Houve um erro interno: " + e1, Toast.LENGTH_LONG).show();
@@ -123,6 +126,17 @@ public class CoordinatesFragment extends Fragment {
             });
         }
 
+        btn_history.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                Intent intent = new Intent(getActivity(), HistoryActivity.class);
+                intent.putExtra("email", email);
+                intent.putExtra("senha", senha);
+                intent.putExtra("imei", imei);
+                startActivity(intent);
+            }
+        });
+
         return view;
     }
 
@@ -132,11 +146,20 @@ public class CoordinatesFragment extends Fragment {
             int shortAnimTime = getResources().getInteger(android.R.integer.config_shortAnimTime);
 
             listViewCoordinatesFragment.setVisibility(show ? View.GONE : View.VISIBLE);
+            btn_history.setVisibility(show ? View.GONE : View.VISIBLE);
+
             listViewCoordinatesFragment.animate().setDuration(shortAnimTime).alpha(
                     show ? 0 : 1).setListener(new AnimatorListenerAdapter() {
                 @Override
                 public void onAnimationEnd(Animator animation) {
                     listViewCoordinatesFragment.setVisibility(show ? View.GONE : View.VISIBLE);
+                }
+            });
+            btn_history.animate().setDuration(shortAnimTime).alpha(
+                    show ? 0 : 1).setListener(new AnimatorListenerAdapter() {
+                @Override
+                public void onAnimationEnd(Animator animation) {
+                    btn_history.setVisibility(show ? View.GONE : View.VISIBLE);
                 }
             });
 
@@ -153,6 +176,7 @@ public class CoordinatesFragment extends Fragment {
             // and hide the relevant UI components.
             mProgressView.setVisibility(show ? View.VISIBLE : View.GONE);
             listViewCoordinatesFragment.setVisibility(show ? View.GONE : View.VISIBLE);
+            btn_history.setVisibility(show ? View.GONE : View.VISIBLE);
         }
     }
 
