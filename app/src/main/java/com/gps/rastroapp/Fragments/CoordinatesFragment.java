@@ -104,8 +104,11 @@ public class CoordinatesFragment extends Fragment {
                             @Override
                             public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
                                 Intent intent = new Intent(getActivity(), MapsActivity.class);
-                                intent.putExtra("latitudeDecimalDegrees", coordinateArrayList.get(position).getLatitude());
-                                intent.putExtra("longitudeDecimalDegrees",coordinateArrayList.get(position).getLongitude());
+//                                intent.putExtra("latitudeDecimalDegrees", coordinateArrayList.get(position).getLatitude());
+//                                intent.putExtra("longitudeDecimalDegrees",coordinateArrayList.get(position).getLongitude());
+                                ArrayList<Coordinate> coordinateIntent = new ArrayList<>();
+                                coordinateIntent.add(coordinateArrayList.get(position));
+                                intent.putExtra("coordinateArrayList", coordinateIntent);
                                 startActivity(intent);
                             }
                         });

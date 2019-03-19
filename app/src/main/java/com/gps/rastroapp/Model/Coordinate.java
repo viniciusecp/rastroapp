@@ -1,6 +1,8 @@
 package com.gps.rastroapp.Model;
 
-public class Coordinate {
+import java.io.Serializable;
+
+public class Coordinate implements Serializable {
 
     private String date;
     private String latitude;

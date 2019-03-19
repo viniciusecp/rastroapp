@@ -39,10 +39,11 @@ import java.util.Map;
 
 public class HistoryActivity extends AppCompatActivity implements DatePickerDialog.OnDateSetListener, TimePickerDialog.OnTimeSetListener {
 
-    private TextView edtDataInicio;
-    private TextView edtHoraInicio;
-    private TextView edtDataFinal;
-    private TextView edtHoraFinal;
+    private TextView tvDataInicio;
+    private TextView tvHoraInicio;
+    private TextView tvDataFinal;
+    private TextView tvHoraFinal;
+    private TextView tvVerNoMapa;
     private Button btnBuscar;
     private ListView listViewHistory;
     private ProgressBar history_progress;
@@ -58,19 +59,20 @@ public class HistoryActivity extends AppCompatActivity implements DatePickerDial
         Intent intent = getIntent();
         Bundle extras = intent.getExtras();
 
-        String email = extras.getString("email");
-        String senha = extras.getString("senha");
-        String imei = extras.getString("imei");
+        final String email = extras.getString("email");
+        final String senha = extras.getString("senha");
+        final String imei = extras.getString("imei");
 
-        edtDataInicio = findViewById(R.id.edtDataInicio);
-        edtHoraInicio = findViewById(R.id.edtHoraInicio);
-        edtDataFinal = findViewById(R.id.edtDataFinal);
-        edtHoraFinal = findViewById(R.id.edtHoraFinal);
+        tvDataInicio = findViewById(R.id.tvDataInicio);
+        tvHoraInicio = findViewById(R.id.tvHoraInicio);
+        tvDataFinal = findViewById(R.id.tvDataFinal);
+        tvHoraFinal = findViewById(R.id.tvHoraFinal);
         btnBuscar = findViewById(R.id.btnBuscar);
+        tvVerNoMapa = findViewById(R.id.tvVerNoMapa);
         listViewHistory = findViewById(R.id.listViewHistory);
         history_progress = findViewById(R.id.history_progress);
 
-        edtDataInicio.setOnClickListener(new View.OnClickListener() {
+        tvDataInicio.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 itemSelected = "edtDataInicio";
@@ -85,7 +87,7 @@ public class HistoryActivity extends AppCompatActivity implements DatePickerDial
                 datePickerDialog.show();
             }
         });
-        edtHoraInicio.setOnClickListener(new View.OnClickListener() {
+        tvHoraInicio.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 itemSelected = "edtHoraInicio";
@@ -100,7 +102,7 @@ public class HistoryActivity extends AppCompatActivity implements DatePickerDial
                 timePickerDialog.show();
             }
         });
-        edtDataFinal.setOnClickListener(new View.OnClickListener() {
+        tvDataFinal.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 itemSelected = "edtDataFinal";
@@ -116,7 +118,7 @@ public class HistoryActivity extends AppCompatActivity implements DatePickerDial
             }
         });
 
-        edtHoraFinal.setOnClickListener(new View.OnClickListener() {
+        tvHoraFinal.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 itemSelected = "edtHoraFinal";
@@ -132,22 +134,32 @@ public class HistoryActivity extends AppCompatActivity implements DatePickerDial
             }
         });
 
-
-        // Faz nova chamada a API
-        final String path = "getcoordinates/" + imei;
-
-        final Map<String, String> jsonParams = new HashMap<>();
-        jsonParams.put("email", email);
-        jsonParams.put("senha", senha);
-
         btnBuscar.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
 
+                String dataInicio = tvDataInicio.getText().toString();
+                String horaInicio = tvHoraInicio.getText().toString();
+                String dataFinal  = tvDataFinal.getText().toString();
+                String horaFinal  = tvHoraFinal.getText().toString();
+
                 if(!NetworkManager.isNetworkAvailable(HistoryActivity.this)){
                     Toast.makeText(HistoryActivity.this, "Sem acesso a internet!", Toast.LENGTH_SHORT).show();
+                } else if (dataInicio.equals("__/__/____") || dataFinal.equals("__/__/____") || horaInicio.equals("__:__") || horaFinal.equals("__:__")){
+                    Toast.makeText(HistoryActivity.this, "Preencha todos os campos!", Toast.LENGTH_SHORT).show();
                 } else {
                     showProgress(true);
+
+                    // Faz nova chamada a API
+                    String path = "gethistory/" + imei;
+
+                    Map<String, String> jsonParams = new HashMap<>();
+                    jsonParams.put("email", email);
+                    jsonParams.put("senha", senha);
+                    jsonParams.put("dataInicio", dataInicio);
+                    jsonParams.put("horaInicio", horaInicio);
+                    jsonParams.put("dataFinal", dataFinal);
+                    jsonParams.put("horaFinal", horaFinal);
 
                     NetworkManager.getInstance().somePostRequestReturningString(path, jsonParams, new SomeCustomListener<String>() {
                         @Override
@@ -178,8 +190,21 @@ public class HistoryActivity extends AppCompatActivity implements DatePickerDial
                                     @Override
                                     public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
                                         Intent intent = new Intent(HistoryActivity.this, MapsActivity.class);
-                                        intent.putExtra("latitudeDecimalDegrees", coordinateArrayList.get(position).getLatitude());
-                                        intent.putExtra("longitudeDecimalDegrees", coordinateArrayList.get(position).getLongitude());
+//                                        intent.putExtra("latitudeDecimalDegrees", coordinateArrayList.get(position).getLatitude());
+//                                        intent.putExtra("longitudeDecimalDegrees", coordinateArrayList.get(position).getLongitude());
+                                        ArrayList<Coordinate> coordinateIntent = new ArrayList<>();
+                                        coordinateIntent.add(coordinateArrayList.get(position));
+                                        intent.putExtra("coordinateArrayList", coordinateIntent);
+                                        startActivity(intent);
+                                    }
+                                });
+
+//                                tvVerNoMapa.setVisibility(View.VISIBLE);
+                                tvVerNoMapa.setOnClickListener(new View.OnClickListener() {
+                                    @Override
+                                    public void onClick(View v) {
+                                        Intent intent = new Intent(HistoryActivity.this, MapsActivity.class);
+                                        intent.putExtra("coordinateArrayList", coordinateArrayList);
                                         startActivity(intent);
                                     }
                                 });
@@ -213,10 +238,10 @@ public class HistoryActivity extends AppCompatActivity implements DatePickerDial
 
         switch (itemSelected) {
             case "edtDataInicio":
-                edtDataInicio.setText(dayFinal + "/" + monthFinal + "/" + year);
+                tvDataInicio.setText(dayFinal + "/" + monthFinal + "/" + year);
                 break;
             case "edtDataFinal":
-                edtDataFinal.setText(dayFinal + "/" + monthFinal + "/" + year);
+                tvDataFinal.setText(dayFinal + "/" + monthFinal + "/" + year);
                 break;
         }
     }
@@ -229,10 +254,10 @@ public class HistoryActivity extends AppCompatActivity implements DatePickerDial
 
         switch (itemSelected) {
             case "edtHoraInicio":
-                edtHoraInicio.setText(hourFinal + ":" + minFinal);
+                tvHoraInicio.setText(hourFinal + ":" + minFinal);
                 break;
             case "edtHoraFinal":
-                edtHoraFinal.setText(hourFinal + ":" + minFinal);
+                tvHoraFinal.setText(hourFinal + ":" + minFinal);
                 break;
         }
     }
@@ -243,12 +268,20 @@ public class HistoryActivity extends AppCompatActivity implements DatePickerDial
             int shortAnimTime = getResources().getInteger(android.R.integer.config_shortAnimTime);
 
             listViewHistory.setVisibility(show ? View.GONE : View.VISIBLE);
+            tvVerNoMapa.setVisibility(show ? View.GONE : View.VISIBLE);
 
             listViewHistory.animate().setDuration(shortAnimTime).alpha(
                     show ? 0 : 1).setListener(new AnimatorListenerAdapter() {
                 @Override
                 public void onAnimationEnd(Animator animation) {
                     listViewHistory.setVisibility(show ? View.GONE : View.VISIBLE);
+                }
+            });
+            tvVerNoMapa.animate().setDuration(shortAnimTime).alpha(
+                    show ? 0 : 1).setListener(new AnimatorListenerAdapter() {
+                @Override
+                public void onAnimationEnd(Animator animation) {
+                    tvVerNoMapa.setVisibility(show ? View.GONE : View.VISIBLE);
                 }
             });
 
@@ -265,6 +298,7 @@ public class HistoryActivity extends AppCompatActivity implements DatePickerDial
             // and hide the relevant UI components.
             history_progress.setVisibility(show ? View.VISIBLE : View.GONE);
             listViewHistory.setVisibility(show ? View.GONE : View.VISIBLE);
+            tvVerNoMapa.setVisibility(show ? View.GONE : View.VISIBLE);
         }
     }
 

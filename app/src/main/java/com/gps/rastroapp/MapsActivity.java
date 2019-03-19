@@ -3,6 +3,7 @@ package com.gps.rastroapp;
 import android.content.Intent;
 import android.support.v4.app.FragmentActivity;
 import android.os.Bundle;
+import android.util.Log;
 
 import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
@@ -10,6 +11,9 @@ import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.SupportMapFragment;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.MarkerOptions;
+import com.gps.rastroapp.Model.Coordinate;
+
+import java.util.ArrayList;
 
 public class MapsActivity extends FragmentActivity implements OnMapReadyCallback {
 
@@ -36,18 +40,25 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
      */
     @Override
     public void onMapReady(GoogleMap googleMap) {
-
         Intent intent = getIntent();
 
-        float latitudeDecimalDegrees = Float.parseFloat(intent.getStringExtra("latitudeDecimalDegrees"));
-        float longitudeDecimalDegrees = Float.parseFloat(intent.getStringExtra("longitudeDecimalDegrees"));
+        ArrayList<Coordinate> coordinateArrayList = (ArrayList<Coordinate>) intent.getSerializableExtra("coordinateArrayList");
 
         mMap = googleMap;
-
-        // Add a marker in Sydney and move the camera
-        LatLng position = new LatLng(latitudeDecimalDegrees, longitudeDecimalDegrees);
-        mMap.addMarker(new MarkerOptions().position(position).title("Localização"));
-        mMap.moveCamera(CameraUpdateFactory.newLatLng(position));
         mMap.setMinZoomPreference(15);
+
+        int i = 0;
+        for (Coordinate coordinate : coordinateArrayList){
+            float latitudeDecimalDegrees  = Float.parseFloat(coordinate.getLatitude());
+            float longitudeDecimalDegrees = Float.parseFloat(coordinate.getLongitude());
+
+            LatLng position = new LatLng(latitudeDecimalDegrees, longitudeDecimalDegrees);
+
+            mMap.addMarker(new MarkerOptions().position(position).title("Posição: "+i));
+            mMap.moveCamera(CameraUpdateFactory.newLatLng(position));
+
+            i++;
+        }
+
     }
 }
